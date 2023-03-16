@@ -1,49 +1,37 @@
-import React from 'react';
-import axios from 'axios';
+const express = require('express');
+const app = express();
+const { exec } = require('child_process');
+const path = require('path');
+const multer = require('multer');
 
-class App extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      jmxFile: null,
-      propertiesFile: null,
-      result: '',
-    };
-    this.handleJmeterClick = this.handleJmeterClick.bind(this);
-    this.handleJmxFileChange = this.handleJmxFileChange.bind(this);
-    this.handlePropertiesFileChange = this.handlePropertiesFileChange.bind(this);
-  }
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './uploads');
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
+});
 
-  handleJmxFileChange(event) {
-    this.setState({ jmxFile: event.target.files[0] });
-  }
+const upload = multer({ storage: storage });
 
-  handlePropertiesFileChange(event) {
-    this.setState({ propertiesFile: event.target.files[0] });
-  }
+app.use(express.static(path.join(__dirname, 'public')));
 
-  handleJmeterClick() {
-    const formData = new FormData();
-    formData.append('jmxFile', this.state.jmxFile);
-    formData.append('propertiesFile', this.state.propertiesFile);
+app.post('/jmeter', upload.fields([{ name: 'jmxFile', maxCount: 1 }, { name: 'propertiesFile', maxCount: 1 }]), (req, res) => {
+  const jmxFilePath = path.join(__dirname, 'uploads', req.files.jmxFile[0].filename);
+  const propertiesFilePath = path.join(__dirname, 'uploads', req.files.propertiesFile[0].filename);
 
-    axios.post('/jmeter', formData).then((res) => {
-      this.setState({ result: res.data });
-    });
-  }
+  exec(`jmeter -n -t ${jmxFilePath} -q ${propertiesFilePath}`, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`exec error: ${error}`);
+      return;
+    }
+    console.log(`stdout: ${stdout}`);
+    console.error(`stderr: ${stderr}`);
+    res.send(stdout);
+  });
+});
 
-  render() {
-    return (
-      <div>
-        <div>
-          <input type="file" onChange={this.handleJmxFileChange} />
-          <input type="file" onChange={this.handlePropertiesFileChange} />
-          <button onClick={this.handleJmeterClick}>Start JMETER</button>
-        </div>
-        <div>{this.state.result}</div>
-      </div>
-    );
-  }
-}
-
-export default App;
+app.listen(3000, () => {
+  console.log('Server is listening on port 3000!');
+});
