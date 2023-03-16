@@ -1,21 +1,27 @@
-import React from 'react';
+const express = require('express');
+const { exec } = require('child_process');
+const jmeter = require('jmeter');
 
-function JMeterButton() {
-  const handleJMeterButtonClick = async () => {
-    // Set the path to the JMETER and test plan files
-    const jmeterPath = 'C:\\path\\to\\jmeter\\bin\\jmeter.bat';
-    const testPlanPath = 'C:\\path\\to\\test-plan.jmx';
+const app = express();
+const port = 3000;
 
-    // Launch the JMETER with the test plan
-    const { spawn } = window.require('child_process');
-    spawn('cmd.exe', ['/c', jmeterPath, '-n', '-t', testPlanPath], { detached: true, stdio: 'ignore' });
-  };
+app.use(express.static('public'));
 
-  return (
-    <button onClick={handleJMeterButtonClick}>
-      Start JMETER
-    </button>
-  );
-}
+app.get('/run-jmeter', (req, res) => {
+  const testPath = 'path/to/your/test.jmx';
+  const resultsPath = 'path/to/save/results.jtl';
+  const test = jmeter.testFromFile(testPath);
+  const options = { resultsFile: resultsPath };
+  test.run(options, (err, result) => {
+    if (err) {
+      console.error(`exec error: ${err}`);
+      return res.send(`exec error: ${err}`);
+    }
+    console.log(`stdout: ${result}`);
+    res.send(`<pre>${result}</pre>`);
+  });
+});
 
-export default JMeterButton;
+app.listen(port, () => {
+  console.log(`Listening on http://localhost:${port}`);
+});
