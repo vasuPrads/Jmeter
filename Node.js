@@ -7,8 +7,12 @@ const app = express();
 
 // Set up the route for the JMETER button click event
 app.get('/start-jmeter', (req, res) => {
-  // Spawn a new process to start the JMETER.jar application
-  const jmeterProcess = spawn('java', ['-jar', '/path/to/jmeter.jar']);
+  // Set the path to the JMETER and test plan files
+  const jmeterPath = '/path/to/jmeter/bin/jmeter.sh';
+  const testPlanPath = '/path/to/test-plan.jmx';
+
+  // Spawn a new process to start the JMETER application with the test plan
+  const jmeterProcess = spawn(jmeterPath, ['-n', '-t', testPlanPath]);
 
   // Handle any errors that may occur
   jmeterProcess.on('error', (err) => {
