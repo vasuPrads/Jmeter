@@ -1,38 +1,49 @@
-const express = require('express');
-const { spawn } = require('child_process');
+import React from 'react';
+import axios from 'axios';
 
-const app = express();
-const jmeterPath = `${process.env.JMETER_HOME}/bin/jmeter.bat`;
+class App extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      jmxFile: null,
+      propertiesFile: null,
+      result: '',
+    };
+    this.handleJmeterClick = this.handleJmeterClick.bind(this);
+    this.handleJmxFileChange = this.handleJmxFileChange.bind(this);
+    this.handlePropertiesFileChange = this.handlePropertiesFileChange.bind(this);
+  }
 
-app.get('/run-jmeter', (req, res) => {
-  const jmeterTestFile = 'path/to/your/test/file.jmx';
-  const jmeterArgs = [
-    '-n',
-    '-t',
-    jmeterTestFile,
-    '-l',
-    'results.jtl',
-    '-e',
-    '-o',
-    'results'
-  ];
+  handleJmxFileChange(event) {
+    this.setState({ jmxFile: event.target.files[0] });
+  }
 
-  const jmeterProcess = spawn(jmeterPath, jmeterArgs);
-  
-  jmeterProcess.stdout.on('data', (data) => {
-    console.log(data.toString());
-  });
-  
-  jmeterProcess.stderr.on('data', (data) => {
-    console.error(data.toString());
-  });
-  
-  jmeterProcess.on('close', (code) => {
-    console.log(`JMETER process exited with code ${code}`);
-    res.sendFile(`${__dirname}/results/index.html`);
-  });
-});
+  handlePropertiesFileChange(event) {
+    this.setState({ propertiesFile: event.target.files[0] });
+  }
 
-app.listen(3000, () => {
-  console.log('Server started on port 3000');
-});
+  handleJmeterClick() {
+    const formData = new FormData();
+    formData.append('jmxFile', this.state.jmxFile);
+    formData.append('propertiesFile', this.state.propertiesFile);
+
+    axios.post('/jmeter', formData).then((res) => {
+      this.setState({ result: res.data });
+    });
+  }
+
+  render() {
+    return (
+      <div>
+        <div>
+          <input type="file" onChange={this.handleJmxFileChange} />
+          <input type="file" onChange={this.handlePropertiesFileChange} />
+          <button onClick={this.handleJmeterClick}>Start JMETER</button>
+        </div>
+        <div>{this.state.result}</div>
+      </div>
+    );
+  }
+}
+
+export default App;
