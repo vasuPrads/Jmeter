@@ -1,36 +1,30 @@
-// Import required packages
 const express = require('express');
-const { spawn } = require('child_process');
+const multer = require('multer');
 
-// Initialize the express app
-const app = express();
-
-// Set up the route for the JMETER button click event
-app.get('/start-jmeter', (req, res) => {
-  // Set the path to the JMETER and test plan files
-  const jmeterPath = '/path/to/jmeter/bin/jmeter.sh';
-  const testPlanPath = '/path/to/test-plan.jmx';
-
-  // Spawn a new process to start the JMETER application with the test plan
-  const jmeterProcess = spawn(jmeterPath, ['-n', '-t', testPlanPath]);
-
-  // Handle any errors that may occur
-  jmeterProcess.on('error', (err) => {
-    console.error(err);
-    res.status(500).send('An error occurred while starting JMETER');
-  });
-
-  // Handle the exit event of the JMETER process
-  jmeterProcess.on('exit', (code, signal) => {
-    console.log(`JMETER process exited with code ${code} and signal ${signal}`);
-  });
-
-  // Send a response to the client
-  res.send('JMETER has started successfully!');
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './uploads');
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  }
 });
 
-// Start the server
-const port = 3000;
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+const upload = multer({ storage: storage });
+
+const app = express();
+
+app.post('/upload', upload.array(['jmx', 'userProperties']), function(req, res) {
+  const jmx = req.files.find(file => file.fieldname === 'jmx');
+  const userProperties = req.files.find(file => file.fieldname === 'userProperties');
+
+  const collection = db.collection('tests');
+  collection.insertOne({ jmx: { name: jmx.originalname, content: jmx.buffer.toString() }, userProperties: { name: userProperties.originalname, content: userProperties.buffer.toString() } }, function(err, result) {
+    if (err) throw err;
+    res.json({ message: 'Files uploaded successfully' });
+  });
+});
+
+app.listen(3000, function() {
+  console.log('Server listening on port 3000');
 });
