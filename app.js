@@ -1,35 +1,27 @@
-import React, { useState } from 'react';
-import Dropzone from 'react-dropzone';
+const express = require('express');
+const cors = require('cors');
+const mongodb = require('mongodb');
+const MongoClient = mongodb.MongoClient;
 
-function FileUploader(props) {
-  const [files, setFiles] = useState([]);
+const app = express();
 
-  function onDrop(acceptedFiles) {
-    setFiles(acceptedFiles);
+app.use(cors());
+app.use(express.json());
+
+const uri = 'mongodb://localhost:27017/your-db-name';
+
+app.post('/data', async (req, res) => {
+  try {
+    const client = await MongoClient.connect(uri);
+    const db = client.db();
+    const data = req.body;
+    await db.collection('your-collection-name').insertOne(data);
+    res.status(201).json({ message: 'Data inserted successfully.' });
+    client.close();
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Something went wrong.' });
   }
+});
 
-  function uploadFiles() {
-    const formData = new FormData();
-    formData.append('jmx', files[0]);
-    formData.append('userProperties', files[1]);
-
-    fetch('/upload', { method: 'POST', body: formData })
-      .then(response => response.json())
-      .then(data => console.log(data))
-      .catch(error => console.error(error));
-  }
-
-  return (
-    <div>
-      <Dropzone onDrop={onDrop}>
-        {({ getRootProps, getInputProps }) => (
-          <div {...getRootProps()}>
-            <input {...getInputProps()} />
-            <p>Drag and drop JMX and User.Properties files here, or click to select files</p>
-            {files.map(file => (
-              <p key={file.name}>{file.name}</p>
-      </div>
-    )}
-  </Dropzone>
-  <button onClick={uploadFiles}>Upload files</button>
-</div>
+app.listen(5000, () => console.log('Server running on port 5000'));
