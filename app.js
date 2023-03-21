@@ -1,37 +1,35 @@
-const express = require('express');
-const app = express();
-const { exec } = require('child_process');
-const path = require('path');
-const multer = require('multer');
+import React, { useState } from 'react';
+import Dropzone from 'react-dropzone';
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, './uploads');
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname);
-  },
-});
+function FileUploader(props) {
+  const [files, setFiles] = useState([]);
 
-const upload = multer({ storage: storage });
+  function onDrop(acceptedFiles) {
+    setFiles(acceptedFiles);
+  }
 
-app.use(express.static(path.join(__dirname, 'public')));
+  function uploadFiles() {
+    const formData = new FormData();
+    formData.append('jmx', files[0]);
+    formData.append('userProperties', files[1]);
 
-app.post('/jmeter', upload.fields([{ name: 'jmxFile', maxCount: 1 }, { name: 'propertiesFile', maxCount: 1 }]), (req, res) => {
-  const jmxFilePath = path.join(__dirname, 'uploads', req.files.jmxFile[0].filename);
-  const propertiesFilePath = path.join(__dirname, 'uploads', req.files.propertiesFile[0].filename);
+    fetch('/upload', { method: 'POST', body: formData })
+      .then(response => response.json())
+      .then(data => console.log(data))
+      .catch(error => console.error(error));
+  }
 
-  exec(`jmeter -n -t ${jmxFilePath} -q ${propertiesFilePath}`, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`exec error: ${error}`);
-      return;
-    }
-    console.log(`stdout: ${stdout}`);
-    console.error(`stderr: ${stderr}`);
-    res.send(stdout);
-  });
-});
-
-app.listen(3000, () => {
-  console.log('Server is listening on port 3000!');
-});
+  return (
+    <div>
+      <Dropzone onDrop={onDrop}>
+        {({ getRootProps, getInputProps }) => (
+          <div {...getRootProps()}>
+            <input {...getInputProps()} />
+            <p>Drag and drop JMX and User.Properties files here, or click to select files</p>
+            {files.map(file => (
+              <p key={file.name}>{file.name}</p>
+      </div>
+    )}
+  </Dropzone>
+  <button onClick={uploadFiles}>Upload files</button>
+</div>
