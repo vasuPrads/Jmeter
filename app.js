@@ -1,40 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const Form = () => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+const Data = () => {
+  const [data, setData] = useState([]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const data = {
-      title: title,
-      description: description,
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/data');
+        setData(response.data);
+      } catch (error) {
+        console.log(error);
+      }
     };
-    try {
-      await axios.post('http://localhost:5000/data', data);
-      setTitle('');
-      setDescription('');
-      alert('Data inserted successfully.');
-    } catch (error) {
-      console.log(error);
-      alert('Something went wrong.');
-    }
-  };
+    fetchData();
+  }, []);
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label>Title:</label>
-        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
-      </div>
-      <div>
-        <label>Description:</label>
-        <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} />
-      </div>
-      <button type="submit">Submit</button>
-    </form>
+    <div>
+      <h2>Data:</h2>
+      <ul>
+        {data.map((item) => (
+          <li key={item._id}>
+            <strong>Title:</strong> {item.title} <br />
+            <strong>Description:</strong> {item.description}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 };
 
-export default Form;
+export default Data;
